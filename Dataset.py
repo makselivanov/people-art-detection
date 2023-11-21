@@ -1,6 +1,6 @@
 import logging
-import os
 
+import PIL.Image
 import torch
 import torchvision.io
 import xmltodict
@@ -12,25 +12,37 @@ class PeopleArtDataset(Dataset):
     annotationsSuffixDirPath = "Annotations"
     imagesSuffixDirPath = "JPEGImages"
 
-    def __init__(self, people_art_dir_path, logger_level=logging.INFO):
+    def __init__(self, people_art_dir_path, mode="trainval", logger_level=logging.INFO):
         self.logger = logging.getLogger("Detection")
         self.logger.setLevel(logger_level)
         self.peopleArtDirPath = people_art_dir_path
         self.annotations = []
+        self.mode = mode
         annotations_dir_path = f"{self.peopleArtDirPath}/{self.annotationsSuffixDirPath}"
         self.logger.debug("Start walking")
-        for dir_name in next(os.walk(annotations_dir_path))[1]:
-            self.logger.debug(f'Found directory: {dir_name}')
-            for file_name in next(os.walk(f"{annotations_dir_path}/{dir_name}"))[2]:
-                self.logger.debug(f'File name: {file_name}')
-                file_path = f"{annotations_dir_path}/{dir_name}/{file_name}"
-                with open(file_path) as xml_file:
-                    unparsed_str = xml_file.read()
-                    xml_dict = xmltodict.parse(unparsed_str)
-                    self.logger.debug(f"Parsed dictionary: {xml_dict}")
-                    self.logger.debug(f"Folder Name in file: {xml_dict.get('annotation').get('folder')}")
-                    self.logger.debug(f"Image File in file: {xml_dict.get('annotation').get('filename')}")
-                    self.annotations.append(xml_dict)
+        with open(f"{annotations_dir_path}/person_{mode}.txt") as annotations_file:
+            for line in annotations_file.readlines():
+                img_path, label = line.split()
+                self.logger.debug(f"Label: {label}\tImage path: {img_path}")
+                annotations = None
+                if label == "1":
+                    # Have person and annotations file
+                    annotations_path = img_path + ".xml"
+                    with open(f"{people_art_dir_path}/{self.annotationsSuffixDirPath}/{annotations_path}") as xml_file:
+                        unparsed_str = xml_file.read()
+                        annotations = xmltodict.parse(unparsed_str)
+                else:
+                    # Don't have person and annotations file
+                    with PIL.Image.open(f"{people_art_dir_path}/{self.imagesSuffixDirPath}/{img_path}") as img_file:
+                        style_dir, img_name = img_path.split("/")
+                        w, h = img_file.size
+                        annotations = {"annotation": {"filename": img_name, "folder": style_dir,
+                                                      "object": {"name": "unknown",
+                                                                 "bndbox": {"xmin": 0, "ymin": 0, "xmax": w,
+                                                                            "ymax": h}}}}
+
+                self.logger.debug(f"Parsed annotations: {annotations}")
+                self.annotations.append(annotations)
 
     def __len__(self):
         return len(self.annotations)
@@ -47,7 +59,7 @@ class PeopleArtDataset(Dataset):
             bndbox = current_object.get("bndbox")
             boxes = [bndbox.get("xmin"), bndbox.get("ymin"), bndbox.get("xmax"), bndbox.get("ymax")]
             boxes = list(map(float, boxes))
-            label = int(current_object.get("name") == "person")
+            label = 1 if current_object.get("name") == "person" else -1
             return {"boxes": boxes, "labels": label}
 
         def update_boxes_labels(boxes_labels, current_boxes_labels):
