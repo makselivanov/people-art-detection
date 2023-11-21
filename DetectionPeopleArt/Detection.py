@@ -60,7 +60,6 @@ class PeopleArtDataset(Dataset):
                 "label": torch.Tensor(boxes_labels["label"])
             }
 
-
         boxes_labels = {"boxes": [], "label": []}
         if isinstance(objects, list):
             # Several objects
