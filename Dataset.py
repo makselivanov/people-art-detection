@@ -56,8 +56,8 @@ class PeopleArtDataset(Dataset):
 
         def boxes_label_to_tensor(boxes_labels):
             return {
-                "boxes": torch.Tensor(boxes_labels["boxes"]),
-                "labels": torch.Tensor(boxes_labels["labels"])
+                "boxes": torch.as_tensor(boxes_labels["boxes"]),
+                "labels": torch.as_tensor(boxes_labels["labels"])
             }
 
         boxes_labels = {"boxes": [], "labels": []}
