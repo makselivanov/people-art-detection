@@ -48,19 +48,19 @@ class PeopleArtDataset(Dataset):
             boxes = [bndbox.get("xmin"), bndbox.get("ymin"), bndbox.get("xmax"), bndbox.get("ymax")]
             boxes = list(map(float, boxes))
             label = int(current_object.get("name") == "person")
-            return {"boxes": boxes, "label": label}
+            return {"boxes": boxes, "labels": label}
 
         def update_boxes_labels(boxes_labels, current_boxes_labels):
             boxes_labels["boxes"].append(current_boxes_labels["boxes"])
-            boxes_labels["label"].append(current_boxes_labels["label"])
+            boxes_labels["labels"].append(current_boxes_labels["labels"])
 
         def boxes_label_to_tensor(boxes_labels):
             return {
                 "boxes": torch.Tensor(boxes_labels["boxes"]),
-                "label": torch.Tensor(boxes_labels["label"])
+                "labels": torch.Tensor(boxes_labels["labels"])
             }
 
-        boxes_labels = {"boxes": [], "label": []}
+        boxes_labels = {"boxes": [], "labels": []}
         if isinstance(objects, list):
             # Several objects
             for current_object in objects:
