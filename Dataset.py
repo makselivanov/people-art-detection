@@ -59,7 +59,7 @@ class PeopleArtDataset(Dataset):
             bndbox = current_object.get("bndbox")
             boxes = [bndbox.get("xmin"), bndbox.get("ymin"), bndbox.get("xmax"), bndbox.get("ymax")]
             boxes = list(map(float, boxes))
-            label = 1 if current_object.get("name") == "person" else -1
+            label = 1 if current_object.get("name") == "person" else 0
             return {"boxes": boxes, "labels": label}
 
         def update_boxes_labels(boxes_labels, current_boxes_labels):
