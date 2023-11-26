@@ -1,6 +1,5 @@
 import lightning
 import torch
-import torchvision
 from torch import Tensor
 from torchmetrics.detection import MeanAveragePrecision
 from torchvision.models.detection import SSDLite320_MobileNet_V3_Large_Weights, ssdlite320_mobilenet_v3_large
@@ -10,7 +9,7 @@ class PeopleArtModule(lightning.LightningModule):
     def __init__(self):
         super().__init__()
         self.weights = SSDLite320_MobileNet_V3_Large_Weights.COCO_V1
-        self.ssd = ssdlite320_mobilenet_v3_large(weights=self.weights, )
+        self.ssd = ssdlite320_mobilenet_v3_large(weights=self.weights)
         self.model = self.weights.transforms()
         self.metrics = MeanAveragePrecision()
 
@@ -28,18 +27,8 @@ class PeopleArtModule(lightning.LightningModule):
         output = self(inputs)
         metric = self.calculate_metrics(output, target)
 
-        # log 6 example images
-        # or generated text... or whatever
-        sample_imgs = inputs[:6]
-        grid = torchvision.utils.make_grid(sample_imgs)
-        self.logger.experiment.add_image('example_images', grid, 0)
-
-        # calculate acc
-        labels_hat = torch.argmax(output, dim=1)
-        val_acc = torch.sum(target == labels_hat).item() / (len(target) * 1.0)
-
         # log the outputs!
-        self.log_dict({'val_loss': metric, 'val_acc': val_acc})
+        self.log_dict({'map': metric["map"]})
 
     def calculate_metrics(self, output, target):
         self.metrics.update(output, target)
@@ -52,8 +41,8 @@ class PeopleArtModule(lightning.LightningModule):
 if __name__ == '__main__':
     from DataModule import PeopleArtDataModule
 
-    dataloader = PeopleArtDataModule("PeopleArt", batch_size=8)
+    dataloader = PeopleArtDataModule("PeopleArt", batch_size=2)
     model = PeopleArtModule()
 
-    trainer = lightning.Trainer(fast_dev_run=10)
+    trainer = lightning.Trainer(fast_dev_run=5, default_root_dir="./checkpoints")
     trainer.fit(model=model, train_dataloaders=dataloader)
