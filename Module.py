@@ -28,7 +28,7 @@ class PeopleArtModule(lightning.LightningModule):
         metric = self.calculate_metrics(output, target)
 
         # log the outputs!
-        self.log_dict({'map': metric["map"]})
+        self.log_dict({'map': metric["map"]}, batch_size=len(batch))
 
     def calculate_metrics(self, output, target):
         self.metrics.update(output, target)
