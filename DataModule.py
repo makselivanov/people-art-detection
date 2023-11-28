@@ -14,7 +14,7 @@ def collate_fn(data: list[tuple[Tensor, dict[str, Tensor]]]):
 class PeopleArtDataModule(lightning.LightningDataModule):
     annotations_path = "Annotations"
 
-    def __init__(self, data_dir, batch_size=32):
+    def __init__(self, data_dir, batch_size=32, workers=8):
         super().__init__()
         self.people_art_predict = None
         self.people_art_test = None
@@ -22,6 +22,7 @@ class PeopleArtDataModule(lightning.LightningDataModule):
         self.people_art_val = None
         self.data_dir = data_dir
         self.batch_size = batch_size
+        self.workers = workers
 
     def setup(self, stage: str) -> None:
         if stage == "fit":
@@ -37,10 +38,10 @@ class PeopleArtDataModule(lightning.LightningDataModule):
             self.people_art_predict = dataset
 
     def train_dataloader(self):
-        return DataLoader(self.people_art_train, batch_size=self.batch_size, collate_fn=collate_fn)
+        return DataLoader(self.people_art_train, batch_size=self.batch_size, collate_fn=collate_fn, num_workers=self.workers, persistent_workers=True)
 
     def val_dataloader(self):
-        return DataLoader(self.people_art_val, batch_size=self.batch_size, collate_fn=collate_fn)
+        return DataLoader(self.people_art_val, batch_size=self.batch_size, collate_fn=collate_fn, num_workers=self.workers, persistent_workers=True)
 
     def test_dataloader(self):
         return DataLoader(self.people_art_test, batch_size=self.batch_size, collate_fn=collate_fn)
