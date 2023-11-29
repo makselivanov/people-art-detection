@@ -11,7 +11,8 @@ class PeopleArtModule(lightning.LightningModule):
         self.weights = SSDLite320_MobileNet_V3_Large_Weights.COCO_V1
         self.ssd = ssdlite320_mobilenet_v3_large(weights=self.weights)
         self.model = self.weights.transforms()
-        self.metrics = MeanAveragePrecision()
+        self.metrics = MeanAveragePrecision() # max_detection_thresholds=[1, 5, 50]
+        self.metrics.warn_on_many_detections = False
 
     def forward(self, images, targets=None) -> tuple[dict[str, Tensor], list[dict[str, Tensor]]]:
         return self.ssd.forward(list(map(self.model, images)), targets)
@@ -26,9 +27,8 @@ class PeopleArtModule(lightning.LightningModule):
         inputs, target = batch
         output = self(inputs)
         metric = self.calculate_metrics(output, target)
-
-        # log the outputs!
-        self.log_dict({'map': metric["map"]}, batch_size=len(batch))
+        self.log("mAP", metric["map"], batch_size=len(batch), prog_bar=True,  on_step=False, on_epoch=True)
+        self.log_dict({key : metric[key].mean() for key in metric if key != 'classes'}, batch_size=len(batch))
 
     def calculate_metrics(self, output, target):
         self.metrics.update(output, target)
